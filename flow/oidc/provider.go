@@ -1,25 +1,41 @@
 package oidc
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"github.com/vncommunityleague/kazusa/session"
 	"net/http"
 	"os"
 
+	"github.com/vncommunityleague/kazusa/identity"
 	"golang.org/x/oauth2"
 )
 
-type Provider interface {
-	OAuth() (*oauth2.Config, error)
-	Callback(token *oauth2.Token) (string, error)
+type (
+	Provider interface {
+		OAuth() (*oauth2.Config, error)
+		Callback(ctx context.Context, token *oauth2.Token) (*identity.Identity, error)
+	}
+
+	Dependencies interface {
+		Repository
+		session.Repository
+		identity.Repository
+	}
+)
+
+var providers = map[string]func(d Dependencies) Provider{
+	"discord": NewDiscordProvider,
+	"osu":     NewOsuProvider,
 }
 
-var providers = map[string]Provider{
-	"discord": NewDiscordProvider(),
-	"osu":     NewOsuProvider(),
-}
+func GetProvider(name string, d Dependencies) (Provider, error) {
+	if p, ok := providers[name]; ok {
+		return p(d), nil
+	}
 
-func ProviderByName(name string) Provider {
-	return providers[name]
+	return nil, errors.New("provider not found")
 }
 
 func RouteBaseCallbackPath() string {

@@ -1,17 +1,20 @@
 package oidc
 
 import (
-	"os"
-	"strconv"
-
+	"context"
+	"github.com/vncommunityleague/kazusa/identity"
 	"golang.org/x/oauth2"
+	"os"
 )
 
 type OsuProvider struct {
+	d Dependencies
 }
 
-func NewOsuProvider() Provider {
-	return &OsuProvider{}
+func NewOsuProvider(d Dependencies) Provider {
+	return &OsuProvider{
+		d,
+	}
 }
 
 const (
@@ -39,7 +42,7 @@ func (p *OsuProvider) OAuth() (*oauth2.Config, error) {
 	}, nil
 }
 
-func (p *OsuProvider) Callback(token *oauth2.Token) (string, error) {
+func (p *OsuProvider) Callback(ctx context.Context, token *oauth2.Token) (*identity.Identity, error) {
 	var user struct {
 		ID        uint   `json:"id,omitempty"`
 		Username  string `json:"username,omitempty"`
@@ -47,8 +50,13 @@ func (p *OsuProvider) Callback(token *oauth2.Token) (string, error) {
 	}
 
 	if err := requestOAuthUser(osuApiUrl+"/me", token, &user); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return strconv.Itoa(int(user.ID)), nil
+	id, err := p.d.GetIdentityByOsuID(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return id, nil
 }

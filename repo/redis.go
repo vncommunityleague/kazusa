@@ -1,8 +1,9 @@
 package repo
 
 import (
-	"github.com/redis/rueidis"
 	"os"
+
+	"github.com/redis/rueidis"
 )
 
 func ConnectToRedis() (rueidis.Client, error) {

@@ -2,27 +2,21 @@ package oidc
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
-	"golang.org/x/oauth2"
-	"io"
 	"net/http"
 
-	"github.com/vncommunityleague/kazusa/x"
+	"golang.org/x/oauth2"
+
+	"github.com/vncommunityleague/kazusa/internal"
+	"github.com/vncommunityleague/kazusa/session"
 )
 
 type (
-	handlerDependencies interface {
-		Repository
-	}
-
 	Handler struct {
-		d handlerDependencies
+		d Dependencies
 	}
 )
 
-func NewHandler(d handlerDependencies) *Handler {
+func NewHandler(d Dependencies) *Handler {
 	return &Handler{
 		d,
 	}
@@ -40,14 +34,17 @@ var (
 	RouteCallbackPath = RouteBasePath + "/callback/{provider}"
 )
 
-func (h *Handler) RegisterRoutes(r *x.Router) {
+func (h *Handler) RegisterRoutes(r *internal.Router) {
 	r.GET(RouteInitPath, h.init)
 	r.GET(RouteCallbackPath, h.callback)
 }
 
 func (h *Handler) init(w http.ResponseWriter, r *http.Request) {
-	provider := ProviderByName(r.PathValue("provider"))
 	redirectUrl := r.FormValue("redirect")
+	provider, err := GetProvider(r.PathValue("provider"), h.d)
+	if err != nil {
+		panic(err)
+	}
 
 	ctx := r.Context()
 
@@ -56,7 +53,7 @@ func (h *Handler) init(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	state, err := randomBytesInHex(24)
+	state, err := internal.RandomBytesInHex(24)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +63,7 @@ func (h *Handler) init(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	if err = h.d.UpsertFlow(ctx, state, &Flow{
+	if err = h.d.UpsertOIDCFlow(ctx, state, &Flow{
 		CodeVerifier: codeVerifier,
 		Url:          redirectUrl,
 	}); err != nil {
@@ -81,25 +78,18 @@ func (h *Handler) init(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func randomBytesInHex(count int) (string, error) {
-	buf := make([]byte, count)
-	_, err := io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		panic("Impl error handler for randomBytesInHex")
-	}
-
-	return hex.EncodeToString(buf), nil
-}
-
 func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
-	provider := ProviderByName(r.PathValue("provider"))
 	code := r.FormValue("code")
 	state := r.FormValue("state")
+	provider, err := GetProvider(r.PathValue("provider"), h.d)
+	if err != nil {
+		panic(err)
+	}
 
 	ctx := r.Context()
 	r = r.WithContext(ctx)
 
-	flow, err := h.d.GetFlow(ctx, state)
+	flow, err := h.d.GetAndDeleteOIDCFlow(ctx, state)
 	if err != nil {
 		panic(err)
 	}
@@ -109,12 +99,21 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		panic("Impl error handler for exchangeCode")
 	}
 
-	userId, err := provider.Callback(t)
+	identity, err := provider.Callback(ctx, t)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Fprintf(w, "ID: %s", userId)
+	sess, err := session.NewActiveSession(r, identity)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = h.d.UpsertSession(ctx, sess); err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, flow.Url+"?session="+sess.Token, http.StatusTemporaryRedirect)
 }
 
 func exchangeCode(ctx context.Context, provider Provider, code string, codeVerifier string) (*oauth2.Token, error) {

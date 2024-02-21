@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/vncommunityleague/kazusa/flow/oidc"
+	"github.com/vncommunityleague/kazusa/internal"
 	"github.com/vncommunityleague/kazusa/repo"
-	"github.com/vncommunityleague/kazusa/x"
 	"log"
 	"net/http"
 	"os"
@@ -15,11 +15,17 @@ func main() {
 		panic(err)
 	}
 
+	db, err := repo.ConnectToDB()
+	if err != nil {
+		panic(err)
+	}
+
 	r := repo.NewRepository(repo.RepositoryDependencies{
 		Rds: rds,
+		DB:  db,
 	})
 
-	router := x.NewRouter()
+	router := internal.NewRouter()
 	oidc.NewHandler(r).RegisterRoutes(router)
 
 	host := os.Getenv("HOST_ADDR")
