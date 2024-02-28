@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/vncommunityleague/kazusa/session"
 	"net/http"
 	"os"
 
-	"github.com/vncommunityleague/kazusa/identity"
 	"golang.org/x/oauth2"
+
+	"github.com/vncommunityleague/kazusa/identity"
+	"github.com/vncommunityleague/kazusa/session"
 )
 
 type (
@@ -20,8 +21,11 @@ type (
 
 	Dependencies interface {
 		Repository
-		session.Repository
+
 		identity.Repository
+
+		session.Repository
+		session.ManagerProvider
 	}
 )
 
@@ -35,7 +39,7 @@ func GetProvider(name string, d Dependencies) (Provider, error) {
 		return p(d), nil
 	}
 
-	return nil, errors.New("provider not found")
+	return nil, errors.New("OAuth provider is not found. Please check the supported providers in the codebase")
 }
 
 func RouteBaseCallbackPath() string {

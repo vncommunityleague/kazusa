@@ -15,7 +15,7 @@ const Lifetime = time.Hour * 24
 type Session struct {
 	ID         uuid.UUID          `json:"id" gorm:"primaryKey;type:uuid;default:uuid_generate_v1()"`
 	IdentityID uuid.UUID          `json:"-"`
-	Identity   *identity.Identity `json:"-" gorm:"foreignKey:IdentityID"`
+	Identity   *identity.Identity `json:"identity" gorm:"foreignKey:IdentityID"`
 
 	Token string `json:"token"`
 
@@ -45,10 +45,8 @@ func NewActiveSession(r *http.Request, identity *identity.Identity) (*Session, e
 }
 
 func NewInactiveSession() *Session {
-	token, _ := internal.RandomBytesInHex(24)
-
 	return &Session{
-		Token:  "vcl_session_" + token,
+		Token:  "vcl_session_" + internal.RandomString(64),
 		Active: false,
 	}
 }
@@ -77,7 +75,7 @@ func (s *Session) setMetadata(r *http.Request) {
 	if ip := r.Header.Get("CF-Connecting-IP"); len(ip) > 0 {
 		s.IPAddress = &ip
 	} else if ip = r.Header.Get("X-Forwarded-For"); len(ip) > 0 {
-		ip, _ = GetClientIPAddressesWithoutInternalIPs(strings.Split(ip, ","))
+		ip = GetClientIPAddressesWithoutInternalIPs(strings.Split(ip, ","))
 		s.IPAddress = &ip
 	} else {
 		s.IPAddress = &r.RemoteAddr
@@ -101,8 +99,8 @@ func (s *Session) setMetadata(r *http.Request) {
 	s.Location = &loc
 }
 
-// From ory/kratos
-func GetClientIPAddressesWithoutInternalIPs(ipAddresses []string) (string, error) {
+// GetClientIPAddressesWithoutInternalIPs from ory/kratos
+func GetClientIPAddressesWithoutInternalIPs(ipAddresses []string) string {
 	var res string
 
 	for i := len(ipAddresses) - 1; i >= 0; i-- {
@@ -114,5 +112,5 @@ func GetClientIPAddressesWithoutInternalIPs(ipAddresses []string) (string, error
 		}
 	}
 
-	return res, nil
+	return res
 }

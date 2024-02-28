@@ -19,7 +19,9 @@ func (r *repositoryImpl) GetSession(ctx context.Context, sID uuid.UUID) (*sessio
 
 func (r *repositoryImpl) GetSessionByToken(ctx context.Context, token string) (*session.Session, error) {
 	var s session.Session
-	if result := r.d.DB.WithContext(ctx).First(&s, "token = ?", token); result.Error != nil {
+	if result := r.d.DB.WithContext(ctx).InnerJoins("Identity", &session.Session{
+		Token: token,
+	}).First(&s); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -36,7 +38,12 @@ func (r *repositoryImpl) UpsertSession(ctx context.Context, s *session.Session) 
 
 func (r *repositoryImpl) DeactivateSession(ctx context.Context, iID, sID uuid.UUID) error {
 	var s session.Session
-	if result := r.d.DB.WithContext(ctx).Model(&s).Where("id = ? AND identity_id = ?", sID, iID).Update("active", false); result.Error != nil {
+	if result := r.d.DB.WithContext(ctx).Model(&s).Where(&session.Session{
+		ID:         sID,
+		IdentityID: iID,
+	}).Updates(session.Session{
+		Active: false,
+	}); result.Error != nil {
 		return result.Error
 	}
 
@@ -45,7 +52,9 @@ func (r *repositoryImpl) DeactivateSession(ctx context.Context, iID, sID uuid.UU
 
 func (r *repositoryImpl) DeactivateSessionsFromIdentityExcept(ctx context.Context, iID, sID uuid.UUID) (int, error) {
 	var s session.Session
-	result := r.d.DB.WithContext(ctx).Model(&s).Where("identity_id = ? AND id != ?", iID, sID).Update("active", false)
+	result := r.d.DB.WithContext(ctx).Model(&s).Where("identity_id = ? AND id != ?", iID, sID).Updates(session.Session{
+		Active: false,
+	})
 	if result.Error != nil {
 		return 0, result.Error
 	}

@@ -2,7 +2,7 @@ package internal
 
 import "net/http"
 
-// Copied from kratos/x/router.go
+// Router copied from kratos/x/router.go
 // But used http.ServeMux instead of httprouter.Router
 type Router struct {
 	*http.ServeMux

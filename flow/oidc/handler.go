@@ -43,31 +43,32 @@ func (h *Handler) init(w http.ResponseWriter, r *http.Request) {
 	redirectUrl := r.FormValue("redirect")
 	provider, err := GetProvider(r.PathValue("provider"), h.d)
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusNotFound, ErrOIDCProviderNotFound, err)
+		return
 	}
 
 	ctx := r.Context()
 
 	o, err := provider.OAuth()
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusNotFound, ErrOIDCProviderUnableToCreate, err)
+		return
 	}
 
-	state, err := internal.RandomBytesInHex(24)
-	if err != nil {
-		panic(err)
-	}
+	state := internal.RandomString(24)
 
 	codeVerifier := oauth2.GenerateVerifier()
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusInternalServerError, ErrOIDCVerifierUnableToGenerate, err)
+		return
 	}
 
 	if err = h.d.UpsertOIDCFlow(ctx, state, &Flow{
 		CodeVerifier: codeVerifier,
 		Url:          redirectUrl,
 	}); err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusInternalServerError, ErrOIDCFlowUnableToCreate, err)
+		return
 	}
 
 	url := o.AuthCodeURL(
@@ -83,7 +84,7 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	state := r.FormValue("state")
 	provider, err := GetProvider(r.PathValue("provider"), h.d)
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusNotFound, ErrOIDCProviderNotFound, err)
 	}
 
 	ctx := r.Context()
@@ -91,12 +92,14 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 
 	flow, err := h.d.GetAndDeleteOIDCFlow(ctx, state)
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusNotFound, ErrOIDCFlowNotFound, err)
+		return
 	}
 
 	t, err := exchangeCode(ctx, provider, code, flow.CodeVerifier)
 	if err != nil {
-		panic("Impl error handler for exchangeCode")
+		internal.ErrorJson(w, http.StatusInternalServerError, ErrOIDCUnableToExchangeCode, err)
+		return
 	}
 
 	identity, err := provider.Callback(ctx, t)
@@ -108,6 +111,8 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+
+	h.d.SessionManager().IssueCookie(w, r, sess)
 
 	if err = h.d.UpsertSession(ctx, sess); err != nil {
 		panic(err)

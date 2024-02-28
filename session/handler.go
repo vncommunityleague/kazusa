@@ -1,9 +1,11 @@
 package session
 
 import (
-	"github.com/google/uuid"
-	"github.com/vncommunityleague/kazusa/internal"
 	"net/http"
+
+	"github.com/google/uuid"
+
+	"github.com/vncommunityleague/kazusa/internal"
 )
 
 type (
@@ -18,6 +20,12 @@ type (
 		r handlerDependencies
 	}
 )
+
+func NewHandler(d handlerDependencies) *Handler {
+	return &Handler{
+		r: d,
+	}
+}
 
 var (
 	RouteBasePath = "/sessions"
@@ -36,10 +44,13 @@ func (h *Handler) RegisterRoutes(r *internal.Router) {
 }
 
 func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
-	_, err := h.r.SessionManager().GetSessionFromRequest(r.Context(), r)
+	s, err := h.r.SessionManager().GetSessionFromRequest(r.Context(), r)
 	if err != nil {
+		internal.ErrorJson(w, http.StatusUnauthorized, "unauthorized", err)
 		return
 	}
+
+	internal.Json(w, http.StatusOK, s)
 }
 
 func (h *Handler) deleteMySession(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +62,7 @@ func (h *Handler) deleteMySession(w http.ResponseWriter, r *http.Request) {
 
 	s, err := h.r.SessionManager().GetSessionFromRequest(r.Context(), r)
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusUnauthorized, "unauthorized", err)
 		return
 	}
 
@@ -74,7 +85,7 @@ func (h *Handler) deleteMySession(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) deleteMySessions(w http.ResponseWriter, r *http.Request) {
 	s, err := h.r.SessionManager().GetSessionFromRequest(r.Context(), r)
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusUnauthorized, "unauthorized", err)
 		return
 	}
 
