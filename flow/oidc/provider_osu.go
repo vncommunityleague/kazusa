@@ -8,10 +8,10 @@ import (
 )
 
 type OsuProvider struct {
-	d Dependencies
+	d oidcDependencies
 }
 
-func NewOsuProvider(d Dependencies) Provider {
+func NewOsuProvider(d oidcDependencies) Provider {
 	return &OsuProvider{
 		d,
 	}
@@ -53,10 +53,10 @@ func (p *OsuProvider) Callback(ctx context.Context, token *oauth2.Token) (*ident
 		return nil, err
 	}
 
-	id, err := p.d.GetIdentityByOsuID(ctx, user.ID)
+	i, err := p.d.GetIdentityByOsuID(ctx, user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return id, nil
+	return i, nil
 }

@@ -2,17 +2,18 @@ package oidc
 
 import (
 	"context"
-	"github.com/vncommunityleague/kazusa/identity"
 	"os"
 
 	"golang.org/x/oauth2"
+
+	"github.com/vncommunityleague/kazusa/identity"
 )
 
 type DiscordProvider struct {
-	d Dependencies
+	d oidcDependencies
 }
 
-func NewDiscordProvider(d Dependencies) Provider {
+func NewDiscordProvider(d oidcDependencies) Provider {
 	return &DiscordProvider{
 		d,
 	}
@@ -54,10 +55,10 @@ func (p *DiscordProvider) Callback(ctx context.Context, token *oauth2.Token) (*i
 		return nil, err
 	}
 
-	id, err := p.d.GetIdentityByDiscordID(ctx, user.ID)
+	i, err := p.d.GetIdentityByDiscordID(ctx, user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return id, nil
+	return i, nil
 }

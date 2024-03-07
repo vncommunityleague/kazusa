@@ -17,21 +17,3 @@ func (r *repositoryImpl) GetIdentityByID(ctx context.Context, id string) (*ident
 
 	return &i, nil
 }
-
-func (r *repositoryImpl) GetIdentityByDiscordID(ctx context.Context, discordID string) (*identity.Identity, error) {
-	var i identity.Identity
-	if err := r.d.DB.WithContext(ctx).FirstOrCreate(&i, identity.Identity{DiscordId: discordID}).Error; err != nil {
-		return nil, err
-	}
-
-	return &i, nil
-}
-
-func (r *repositoryImpl) GetIdentityByOsuID(ctx context.Context, osuID uint) (*identity.Identity, error) {
-	var i identity.Identity
-	if err := r.d.DB.WithContext(ctx).First(&i, "osu_id = ?", osuID).Error; err != nil {
-		return nil, err
-	}
-
-	return &i, nil
-}

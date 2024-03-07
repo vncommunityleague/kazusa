@@ -12,11 +12,11 @@ import (
 
 type (
 	Handler struct {
-		d Dependencies
+		d oidcDependencies
 	}
 )
 
-func NewHandler(d Dependencies) *Handler {
+func NewHandler(d oidcDependencies) *Handler {
 	return &Handler{
 		d,
 	}

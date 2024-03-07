@@ -19,7 +19,7 @@ type (
 		Callback(ctx context.Context, token *oauth2.Token) (*identity.Identity, error)
 	}
 
-	Dependencies interface {
+	oidcDependencies interface {
 		Repository
 
 		identity.Repository
@@ -29,12 +29,12 @@ type (
 	}
 )
 
-var providers = map[string]func(d Dependencies) Provider{
+var providers = map[string]func(d oidcDependencies) Provider{
 	"discord": NewDiscordProvider,
 	"osu":     NewOsuProvider,
 }
 
-func GetProvider(name string, d Dependencies) (Provider, error) {
+func GetProvider(name string, d oidcDependencies) (Provider, error) {
 	if p, ok := providers[name]; ok {
 		return p(d), nil
 	}

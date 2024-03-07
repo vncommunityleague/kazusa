@@ -11,7 +11,7 @@ type Identity struct {
 	// Socials
 	DiscordId string `json:"discord_id" gorm:"unique"`
 	// Games
-	OsuId string `json:"osu_id" gorm:"unique"`
+	OsuId uint `json:"osu_id" gorm:"unique"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
