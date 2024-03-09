@@ -44,7 +44,7 @@ func (p *DiscordProvider) OAuth() (*oauth2.Config, error) {
 	}, nil
 }
 
-func (p *DiscordProvider) Callback(ctx context.Context, token *oauth2.Token) (*identity.Identity, error) {
+func (p *DiscordProvider) Callback(ctx context.Context, token *oauth2.Token) (*identity.Identity, bool, error) {
 	var user struct {
 		ID       string `json:"id,omitempty"`
 		Username string `json:"username,omitempty"`
@@ -52,13 +52,13 @@ func (p *DiscordProvider) Callback(ctx context.Context, token *oauth2.Token) (*i
 	}
 
 	if err := requestOAuthUser(discordApiUrl+"/users/@me", token, &user); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	i, err := p.d.GetIdentityByDiscordID(ctx, user.ID)
+	i, created, err := p.d.GetIdentityByDiscordID(ctx, user.ID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return i, nil
+	return i, created, nil
 }

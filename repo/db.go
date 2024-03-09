@@ -1,10 +1,11 @@
 package repo
 
 import (
-	"os"
-
+	"github.com/vncommunityleague/kazusa/identity"
+	"github.com/vncommunityleague/kazusa/session"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"os"
 )
 
 func ConnectToDB() (*gorm.DB, error) {
@@ -16,6 +17,13 @@ func ConnectToDB() (*gorm.DB, error) {
 	}), &gorm.Config{})
 	if err != nil {
 		return nil, err
+	}
+
+	db.Debug().Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+
+	err = db.AutoMigrate(&identity.Identity{}, &session.Session{})
+	if err != nil {
+		panic(err)
 	}
 
 	return db, nil

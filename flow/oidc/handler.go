@@ -102,9 +102,21 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identity, err := provider.Callback(ctx, t)
+	identity, created, err := provider.Callback(ctx, t)
 	if err != nil {
 		panic(err)
+	}
+
+	if created {
+		err = requestCreateNewUser(UserCreation{
+			Id:       identity.ID.String(),
+			Username: "",
+		})
+
+		if err != nil {
+			internal.ErrorJson(w, http.StatusInternalServerError, "unable_to_create_user", err)
+			return
+		}
 	}
 
 	sess, err := session.NewActiveSession(r, identity)

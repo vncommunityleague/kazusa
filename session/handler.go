@@ -1,6 +1,7 @@
 package session
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -68,16 +69,16 @@ func (h *Handler) deleteMySession(w http.ResponseWriter, r *http.Request) {
 
 	sid, err := uuid.Parse(id)
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusBadRequest, "invalid_session_id", err)
 		return
 	}
 	if sid == s.ID {
-		panic(err)
+		internal.ErrorJson(w, http.StatusBadRequest, "delete_current_session", errors.New("you cannot delete your current session"))
 		return
 	}
 
 	if err := h.r.DeactivateSession(r.Context(), s.IdentityID, sid); err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusInternalServerError, "delete_session", err)
 		return
 	}
 }
@@ -91,7 +92,7 @@ func (h *Handler) deleteMySessions(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.r.DeactivateSessionsFromIdentityExcept(r.Context(), s.IdentityID, s.ID)
 	if err != nil {
-		panic(err)
+		internal.ErrorJson(w, http.StatusInternalServerError, "delete_sessions", err)
 		return
 	}
 }

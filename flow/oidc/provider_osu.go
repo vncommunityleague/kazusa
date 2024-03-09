@@ -42,7 +42,7 @@ func (p *OsuProvider) OAuth() (*oauth2.Config, error) {
 	}, nil
 }
 
-func (p *OsuProvider) Callback(ctx context.Context, token *oauth2.Token) (*identity.Identity, error) {
+func (p *OsuProvider) Callback(ctx context.Context, token *oauth2.Token) (*identity.Identity, bool, error) {
 	var user struct {
 		ID        uint   `json:"id,omitempty"`
 		Username  string `json:"username,omitempty"`
@@ -50,13 +50,13 @@ func (p *OsuProvider) Callback(ctx context.Context, token *oauth2.Token) (*ident
 	}
 
 	if err := requestOAuthUser(osuApiUrl+"/me", token, &user); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	i, err := p.d.GetIdentityByOsuID(ctx, user.ID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return i, nil
+	return i, false, nil
 }

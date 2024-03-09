@@ -17,7 +17,7 @@ type Session struct {
 	IdentityID uuid.UUID          `json:"-"`
 	Identity   *identity.Identity `json:"identity" gorm:"foreignKey:IdentityID"`
 
-	Token string `json:"token"`
+	Token string `json:"-"`
 
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiresAt time.Time `json:"expires_at"`

@@ -7,7 +7,7 @@ type Repository interface {
 
 	GetIdentityByID(ctx context.Context, key string) (*Identity, error)
 
-	GetIdentityByDiscordID(ctx context.Context, discordID string) (*Identity, error)
+	GetIdentityByDiscordID(ctx context.Context, discordID string) (*Identity, bool, error)
 
 	GetIdentityByOsuID(ctx context.Context, osuID uint) (*Identity, error)
 }
