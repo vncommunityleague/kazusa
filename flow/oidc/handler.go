@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -22,10 +23,7 @@ func NewHandler(d oidcDependencies) *Handler {
 	}
 }
 
-type Flow struct {
-	CodeVerifier string `json:"code_verifier"`
-	Url          string `json:"url"`
-}
+const ExpiredTime = 5 * time.Minute
 
 var (
 	RouteBasePath = "/flow/oidc"
@@ -63,7 +61,9 @@ func (h *Handler) init(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.d.UpsertOIDCFlow(ctx, state, &Flow{
+	if err = h.d.GetOIDCFlowRepo().Save(ctx, &Flow{
+		Key:          state,
+		ExpiresAt:    time.Now().Add(ExpiredTime),
 		CodeVerifier: codeVerifier,
 		Url:          redirectUrl,
 	}); err != nil {
@@ -90,7 +90,7 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	r = r.WithContext(ctx)
 
-	flow, err := h.d.GetAndDeleteOIDCFlow(ctx, state)
+	flow, err := h.d.GetOIDCFlowRepo().Fetch(ctx, state)
 	if err != nil {
 		internal.ErrorJson(w, http.StatusNotFound, ErrOIDCFlowNotFound, err)
 		return

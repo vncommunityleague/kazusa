@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=kazusa
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=vcl_id
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  hydra-migrate:
+    image: oryd/hydra:latest
+    environment:
+      - DSN=postgres://kazusa:password@postgres:5432/vcl_id?sslmode=disable&max_conns=20&max_idle_conns=4
+    entrypoint: /bin/sh -c "/usr/bin/hydra -c /etc/config/hydra/${HYDRA_YML} migrate sql -e --yes >/dev/null 2>&1"
+    restart: on-failure
+    volumes:
+      - config-data:/etc/config/hydra
+
+  hydra:
+    depends_on:
+      - hydra-migrate
+    image: oryd/hydra:latest
+    env_file:
+      - .env
+    environment:
+      - DSN=postgres://kazusa:password@postgres:5432/vcl_id?sslmode=disable&max_conns=20&max_idle_conns=4
+      - LOG_LEVEL
+    ports:
+      - 4444:4444 # public
+      - 4445:4445 # admin. can be uncommented for testing- but should be removed in prod.
+    restart: unless-stopped
+    command: serve -c /etc/config/hydra/${HYDRA_YML} all --dev
+    volumes:
+      - config-data:/etc/config/hydra
+
+  server:
+    depends_on:
+      - postgres
+    build:
+      context: .
+      target: final
+    ports:
+      - 3000:3000
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://kazusa:password@postgres:5432/vcl_id
+      - REDIS_URL=redis://@redis:6379
+    volumes:
+      - config-data:/etc/config/hydra
+
+volumes:
+  config-data:

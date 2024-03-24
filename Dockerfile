@@ -60,8 +60,7 @@ USER appuser
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/
 
-# Expose the port that the application listens on.
-EXPOSE 3000
+COPY configs/hydra/ /etc/config/hydra/
 
 # What the container should run when it is started.
 ENTRYPOINT [ "/bin/server" ]

@@ -1,9 +1,9 @@
 package oidc
 
-import "context"
+import (
+	"github.com/redis/rueidis/om"
+)
 
 type Repository interface {
-	UpsertOIDCFlow(ctx context.Context, state string, flow *Flow) error
-
-	GetAndDeleteOIDCFlow(ctx context.Context, state string) (*Flow, error)
+	GetOIDCFlowRepo() om.Repository[Flow]
 }

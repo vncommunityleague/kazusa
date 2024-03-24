@@ -1,8 +1,9 @@
 package logout
 
 import (
-	"github.com/vncommunityleague/kazusa/internal"
 	"net/http"
+
+	"github.com/vncommunityleague/kazusa/internal"
 )
 
 type Handler struct {

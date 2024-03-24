@@ -1,13 +1,14 @@
 package session
 
 import (
-	"github.com/google/uuid"
-	"github.com/vncommunityleague/kazusa/identity"
-	"github.com/vncommunityleague/kazusa/internal"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/vncommunityleague/kazusa/identity"
+	"github.com/vncommunityleague/kazusa/internal"
 )
 
 const Lifetime = time.Hour * 24

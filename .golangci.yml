@@ -7,7 +7,7 @@ linters:
     - typecheck
     - unused
     - gosec
-    #    - golint
+    - golint
     - goimports
   disable:
     - ineffassign

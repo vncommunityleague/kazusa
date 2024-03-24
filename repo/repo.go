@@ -2,6 +2,7 @@ package repo
 
 import (
 	"github.com/redis/rueidis"
+	"github.com/redis/rueidis/om"
 	"github.com/vncommunityleague/kazusa/flow/oidc"
 	"github.com/vncommunityleague/kazusa/identity"
 	"github.com/vncommunityleague/kazusa/session"
@@ -25,12 +26,17 @@ type (
 
 	repositoryImpl struct {
 		d RepositoryDependencies
+
+		OIDCFlowRepo om.Repository[oidc.Flow]
 	}
 )
 
 func NewRepository(d RepositoryDependencies) Repository {
+	oidcFlowRepo := om.NewJSONRepository[oidc.Flow]("oidc_flow", oidc.Flow{}, d.Rds)
+
 	return &repositoryImpl{
-		d,
+		d:            d,
+		OIDCFlowRepo: oidcFlowRepo,
 	}
 }
 
