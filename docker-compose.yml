@@ -1,5 +1,27 @@
 services:
+  postgres-db:
+    image: postgres:alpine
+    environment:
+      POSTGRES_DB: kazusa
+      POSTGRES_USER: vcl
+      POSTGRES_PASSWORD: vcl
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis/redis-stack-server:latest
+    restart: on-failure
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+
   kratos-migrate:
+    depends_on:
+      - postgres-db
     image: oryd/kratos:v1.2.0
     environment:
       - DSN=${DATABASE_URL}
@@ -12,8 +34,6 @@ services:
     depends_on:
       - kratos-migrate
     image: oryd/kratos:v1.2.0
-    env_file:
-      - .env
     environment:
     - COURIER_SMTP_CONNECTION_URI
     - SELFSERVICE_FLOWS_SETTINGS_AFTER_HOOKS_0_CONFIG_URL
@@ -26,7 +46,7 @@ services:
     - LOG_LEVEL
     ports:
       - '4433:4433' # public
-      - '4434:4434' # admin. can be uncommented for testing- but should be removed in prod.
+      # - '4434:4434' # admin. can be uncommented for testing- but should be removed in prod.
     restart: unless-stopped
     command: serve -c /etc/config/kratos/${KRATOS_CONFIG_NAME} --dev --watch-courier
     volumes:
@@ -44,42 +64,27 @@ services:
       - "4455:3000"
     restart: on-failure
 
-#  keto-migrate:
-#    image: oryd/keto:v0.12.0-alpha.0
-#    environment:
-#      - DSN=${DATABASE_URL}
-#      - LOG-LEVEL
-#    command: /bin/sh -c "/usr/bin/keto -c /etc/config/keto/${KETO_CONFIG_NAME} migrate up -y >/dev/null 2>&1"
-#    restart: on-failure
-#    volumes:
-#      - config-data:/etc/config
-#
-#  keto:
-#    depends_on:
-#      - keto-migrate
-#    image: oryd/keto:v0.12.0-alpha.0
-#    environment:
-#      - DSN=${DATABASE_URL}
-#      - LOG-LEVEL
-#    ports:
-#      - "4466:4466"
-#      - "4467:4467"
-#    command: serve -c /etc/config/keto/${KETO_CONFIG_NAME} --dev --watch-courier
-#    restart: on-failure
-#    volumes:
-#      - config-data:/etc/config
-
   server:
+    depends_on:
+      - postgres-db
+      - redis
     build: .
-    # image: ghcr.io/vncommunityleague/kazusa
+    # image: ghcr.io/vncommunityleague/kazusa:main
     ports:
       - "4000:4000"
-    env_file:
-      - .env
     environment:
-    - ORY_AUTH_BEARER
+      - ORY_AUTH_BEARER
+      - HOST_ADDR
+      - SITE_URL
+      - DATABASE_URL
+      - REDIS_URL
+      - KRATOS_URL
+      - OSU_CLIENT_ID
+      - OSU_CLIENT_SECRET
     volumes:
       - config-data:/etc/config
 
 volumes:
+  db-data:
+  redis-data:
   config-data:
