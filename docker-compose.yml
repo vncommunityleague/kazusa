@@ -64,6 +64,31 @@ services:
       - "4455:3000"
     restart: on-failure
 
+  keto-migrate:
+    image: oryd/keto:v0.12.0-alpha.0
+    environment:
+      - DSN=${DATABASE_URL}
+      - LOG-LEVEL
+    command: /bin/sh -c "/usr/bin/keto -c /etc/config/keto/${KETO_CONFIG_NAME} migrate up -y >/dev/null 2>&1"
+    restart: on-failure
+    volumes:
+      - config-data:/etc/config
+
+  keto:
+    depends_on:
+      - keto-migrate
+    image: oryd/keto:v0.12.0-alpha.0
+    environment:
+      - DSN=${DATABASE_URL}
+      - LOG-LEVEL
+    ports:
+      - "4466:4466" # public
+      # - "4467:4467" # admin. can be uncommented for testing- but should be removed in prod.
+    command: serve -c /etc/config/keto/${KETO_CONFIG_NAME} --dev --watch-courier
+    restart: on-failure
+    volumes:
+      - config-data:/etc/config
+
   server:
     depends_on:
       - postgres-db
