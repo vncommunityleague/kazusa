@@ -1,68 +1,70 @@
-import { Context, Namespace } from "@ory/keto-namespace-types"
+import { Context, Namespace, SubjectSet } from "@ory/keto-namespace-types"
 
 class User implements Namespace {}
 
 class Role implements Namespace {
   related: {
-    members: User[]
+    members: (User | Role)[]
   }
 }
 
-/**
- * "Product" is a namespace representing a product. It has some rewrites.
- */
-class Product implements Namespace {
-  // Relations are defined and type-annotated.
+class Global implements Namespace {
   related: {
-    /**
-     * "owners" are the users that are the owners of the product.
-     */
-    owners: User[]
-    /**
-     * "admins" are the roles that are administrators of this product (potentially only one).
-     */
-    admins: Role[]
-    /**
-     * "special_roles" are the roles a user has to be member of to gain "additional_permissions"
-     */
-    special_roles: Role[]
+    editors: Role[]
   }
 
   permits = {
-    // this is probably three/four rewrites (create, read, update, delete) with similar rules
-    crud: (ctx: Context): boolean =>
-      this.related.owners.includes(ctx.subject) ||
-      this.related.admins.traverse((admin) => admin.related.members.includes(ctx.subject)),
-
-    // for the additional_permissions one has to have crud and be member of a special role
-    additional_permissions: (ctx: Context): boolean =>
-      this.permits.crud(ctx) &&
-      this.related.special_roles.traverse((role) => role.related.members.includes(ctx.subject))
+    tournament_edit: (ctx: Context): boolean => this.related.editors.includes(ctx.subject),
   }
 }
 
-class Osu implements Namespace {
-    related: {
-        /**
-         * Tournament roles
-         */
-        host: Role[]
-        
-        // General roles
-        designer: Role[]
-        
-        // Mappool roles
-        map_pooler: Role[]
-        mapper: Role[]
-        testplayer: Role[]
+class OsuTournament implements Namespace {
+  related: {
+    viewers: (User | SubjectSet<Role, "members">)[]
+    editors: (User | SubjectSet<Role, "members">)[]
 
-        // Match roles
-        Refree: Role[]
-        Stremer: Role[]
-        Commentator: Role[]
-    }
-    
-    permits = {
-        
-    }
+    mappool_viewers: (User | SubjectSet<Role, "members">)[]
+    mappool_editors: (User | SubjectSet<Role, "members">)[]
+
+    match_viewers: (User | SubjectSet<Role, "members">)[]
+    match_editors: (User | SubjectSet<Role, "members">)[]
+
+    global: Global[]
+  }
+
+  permits = {
+    edit: (ctx: Context): boolean => 
+      this.related.editors.includes(ctx.subject) ||
+      this.related.global.traverse((p) => p.permits.tournament_edit(ctx)),
+
+    mappool_edit: (ctx: Context): boolean => 
+      this.permits.edit(ctx) ||
+      this.related.mappool_editors.includes(ctx.subject),
+  
+    match_edit: (ctx: Context): boolean => 
+      this.permits.edit(ctx) ||
+      this.related.match_editors.includes(ctx.subject)
+  }
+}
+
+class OsuMappool implements Namespace {
+  related: {
+    tournament: OsuTournament[]
+  }
+
+  permits = {
+    edit: (ctx: Context): boolean =>
+      this.related.tournament.traverse((p) => p.permits.mappool_edit(ctx))
+  }
+}
+
+class OsuMatch implements Namespace {
+  related: {
+    tournament: OsuTournament[]
+  }
+
+  permits = {
+    edit: (ctx: Context): boolean =>
+      this.related.tournament.traverse((p) => p.permits.match_edit(ctx))
+  }
 }
