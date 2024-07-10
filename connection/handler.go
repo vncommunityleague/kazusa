@@ -4,46 +4,53 @@ import (
 	"net/http"
 
 	"github.com/vncommunityleague/kazusa/internal"
+	"github.com/vncommunityleague/kazusa/ory"
 )
 
 type (
+	handlerDependenices interface {
+		Repository
+		ManagementProvider
+
+		ory.Provider
+	}
 	HandlerProvider interface {
 		ConnectionHandler() *Handler
 	}
 	Handler struct {
-		d dependencies
+		d handlerDependenices
 	}
 )
 
-func NewHandler(d dependencies) *Handler {
+func NewHandler(d handlerDependenices) *Handler {
 	return &Handler{
 		d,
 	}
 }
 
 var (
-	RouteBasePath = "/connections"
+	RouteBaseConnections = "/connections"
 
-	RouteMe = RouteBasePath + "/me"
+	RouteConnectionsMe = RouteBaseConnections + "/me"
 
-	RouteAuthorizePath = RouteBasePath + "/{provider}/authorize"
-	RouteCallbackPath  = RouteBasePath + "/{provider}/callback"
+	RouteSettingCallback = RouteBaseConnections + "/setting-callback"
 
-	RouteSettingCallback = RouteBasePath + "/setting-callback"
+	RouteAuthorize = RouteBaseConnections + "/{provider}/authorize"
+	RouteCallback  = RouteBaseConnections + "/{provider}/callback"
 )
 
 func (h *Handler) RegisterPublicRoutes(r *internal.PublicRouter) {
-	r.GET(RouteMe, h.me)
+	r.GET(RouteConnectionsMe, h.connectionsMe)
 
-	r.GET(RouteAuthorizePath, h.authorize)
-	r.GET(RouteCallbackPath, h.callback)
+	r.GET(RouteAuthorize, h.authorize)
+	r.GET(RouteCallback, h.callback)
 }
 
 func (h *Handler) RegisterAdminRoutes(r *internal.AdminRouter) {
 	r.POST(RouteSettingCallback, h.settingCallback)
 }
 
-func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) connectionsMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	sess, err := h.d.Kratos().GetSessionFromRequest(r)
