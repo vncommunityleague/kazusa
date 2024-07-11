@@ -29,18 +29,18 @@ func NewHandler(d handlerDependenices) *Handler {
 }
 
 var (
-	RouteBaseConnections = "/connections"
+	RouteBase = "/connections"
 
-	RouteConnectionsMe = RouteBaseConnections + "/me"
+	RouteMe = RouteBase + "/me"
 
-	RouteSettingCallback = RouteBaseConnections + "/setting-callback"
+	RouteSettingCallback = RouteBase + "/setting-callback"
 
-	RouteAuthorize = RouteBaseConnections + "/{provider}/authorize"
-	RouteCallback  = RouteBaseConnections + "/{provider}/callback"
+	RouteAuthorize = RouteBase + "/{provider}/authorize"
+	RouteCallback  = RouteBase + "/{provider}/callback"
 )
 
 func (h *Handler) RegisterPublicRoutes(r *internal.PublicRouter) {
-	r.GET(RouteConnectionsMe, h.connectionsMe)
+	r.GET(RouteBase, h.me)
 
 	r.GET(RouteAuthorize, h.authorize)
 	r.GET(RouteCallback, h.callback)
@@ -50,7 +50,7 @@ func (h *Handler) RegisterAdminRoutes(r *internal.AdminRouter) {
 	r.POST(RouteSettingCallback, h.settingCallback)
 }
 
-func (h *Handler) connectionsMe(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	sess, err := h.d.Kratos().GetSessionFromRequest(r)

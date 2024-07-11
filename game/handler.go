@@ -26,9 +26,9 @@ func NewHandler(d handlerDependenices) *Handler {
 }
 
 var (
-	RouteBaseGames = "/games"
+	RouteBase = "/games"
 
-	RouteGame      = RouteBaseGames + "/{game}"
+	RouteGame      = RouteBase + "/{game}"
 	RouteGameUsers = RouteGame + "/{users}"
 )
 
