@@ -1,0 +1,22 @@
+[
+    {
+        "namespace": "Global",
+        "object": "*",
+        "relation": "editors",
+        "subject_set": {
+            "namespace": "Role",
+            "object": "admin",
+            "relation": "members"
+        }
+    },
+    {
+        "namespace": "Global",
+        "object": "*",
+        "relation": "editors",
+        "subject_set": {
+            "namespace": "Role",
+            "object": "developer",
+            "relation": "members"
+        }
+    }
+]

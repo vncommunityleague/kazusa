@@ -1,0 +1,32 @@
+[
+    {
+        "namespace": "OsuTournament",
+        "object": "*",
+        "relation": "editors",
+        "subject_set": {
+            "namespace": "Role",
+            "object": "organizer",
+            "relation": "members"
+        }
+    },
+    {
+        "namespace": "OsuTournament",
+        "object": "*",
+        "relation": "mappool_editors",
+        "subject_set": {
+            "namespace": "Role",
+            "object": "mappooler",
+            "relation": "members"
+        }
+    },
+    {
+        "namespace": "OsuTournament",
+        "object": "*",
+        "relation": "match_editors",
+        "subject_set": {
+            "namespace": "Role",
+            "object": "refree",
+            "relation": "members"
+        }
+    }
+]

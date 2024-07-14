@@ -1,0 +1,106 @@
+log:
+  level: debug
+  format: text
+  leak_sensitive_values: true
+
+serve:
+  proxy:
+    port: 4455 # run the proxy at port 4455
+    cors:
+      enabled: true
+      allowed_origins:
+        - "*"
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Content-Type
+      exposed_headers:
+        - Content-Type
+      allow_credentials: true
+      debug: true
+  api:
+    port: 4456 # run the api at port 4456
+
+errors:
+  fallback:
+    - json
+  handlers:
+    json:
+      enabled: true
+      config:
+        verbose: true
+    redirect:
+      enabled: true
+      config:
+        to: http://127.0.0.1:4455/login
+        when:
+        - error:
+          - unauthorized
+          - forbidden
+          request:
+            header:
+              accept:
+                - text/html
+
+
+access_rules:
+  repositories:
+    - file:///etc/config/oathkeeper/rules/vocolo.json
+
+authenticators:
+  anonymous:
+    enabled: true
+    config:
+      subject: guest
+  cookie_session:
+    enabled: true
+    config:
+      check_session_url: http://127.0.0.1:4433/sessions/whoami
+      preserve_path: true
+      extra_from: "@this"
+      subject_from: "identity.id"
+      only:
+        - ory_kratos_session
+
+authorizers:
+  remote_json:
+    enabled: true
+    config:
+      base_url: http://127.0.0.1:4466/
+      payload: |
+        { }
+      # forward_response_headers_to_upstream:
+      #   - X-
+      retry:
+        max_delay: 1s
+        give_up_after: 1s
+  allow:
+    enabled: true
+  deny:
+    enabled: true
+    
+mutators:
+  noop:
+    enabled: true
+  header:
+    enabled: true
+    config:
+      headers:
+        X-User: "{{ print .Subject }}"
+        # You could add some other headers, for example with data from the
+        # session.
+        # X-Some-Arbitrary-Data: "{{ print .Extra.some.arbitrary.data }}"
+  id_token:
+    enabled: true
+    config:
+      issuer_url: http://127.0.0.1:4455/
+      jwks_url: file:///etc/config/oathkeeper/jwks.json
+      claims: |
+        {
+          "session": {{ .Extra | toJson }}
+        }
