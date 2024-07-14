@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/vncommunityleague/kazusa/connection"
+	"github.com/vncommunityleague/kazusa/game"
 )
 
 type (
@@ -20,6 +21,8 @@ type (
 	Repository interface {
 		connection.Repository
 
+		game.Repository
+
 		Raw(query string, args ...interface{})
 		Exec(query string, args ...interface{})
 	}
@@ -28,6 +31,8 @@ type (
 		d Depdencies
 
 		ConnectionFlowRepo om.Repository[connection.Flow]
+
+		OsuGameDataRepo om.Repository[game.OsuDataRedis]
 	}
 )
 
@@ -44,7 +49,7 @@ func connectToDB() (*gorm.DB, error) {
 
 	db.Debug().Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 
-	err = db.AutoMigrate(&connection.UserConnections{})
+	err = db.AutoMigrate(&connection.Connections{})
 	if err != nil {
 		panic(err)
 	}
@@ -82,10 +87,12 @@ func NewRepository() Repository {
 
 func newRepository(d Depdencies) Repository {
 	connectionFlowRepo := om.NewJSONRepository[connection.Flow]("connection_flow", connection.Flow{}, d.Rds)
+	osuGameDataRepo := om.NewJSONRepository[game.OsuDataRedis]("game_data_osu", game.OsuDataRedis{}, d.Rds)
 
 	return &Default{
 		d:                  d,
 		ConnectionFlowRepo: connectionFlowRepo,
+		OsuGameDataRepo:    osuGameDataRepo,
 	}
 }
 

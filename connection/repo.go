@@ -9,7 +9,7 @@ import (
 type Repository interface {
 	GetConnectionFlows() om.Repository[Flow]
 
-	SaveConnections(ctx context.Context, conns *UserConnections) error
+	SaveConnections(ctx context.Context, conns *Connections) error
 
-	GetConnectionsByID(ctx context.Context, key string) (*UserConnections, error)
+	GetConnectionsByID(ctx context.Context, key string) (*Connections, error)
 }

@@ -4,39 +4,46 @@ import (
 	"net/http"
 
 	"github.com/vncommunityleague/kazusa/internal"
+	"github.com/vncommunityleague/kazusa/ory"
 )
 
 type (
+	handlerDependenices interface {
+		Repository
+		ManagementProvider
+
+		ory.Provider
+	}
 	HandlerProvider interface {
 		ConnectionHandler() *Handler
 	}
 	Handler struct {
-		d dependencies
+		d handlerDependenices
 	}
 )
 
-func NewHandler(d dependencies) *Handler {
+func NewHandler(d handlerDependenices) *Handler {
 	return &Handler{
 		d,
 	}
 }
 
 var (
-	RouteBasePath = "/connections"
+	RouteBase = "/connections"
 
-	RouteMe = RouteBasePath + "/me"
+	RouteMe = RouteBase + "/me"
 
-	RouteAuthorizePath = RouteBasePath + "/{provider}/authorize"
-	RouteCallbackPath  = RouteBasePath + "/{provider}/callback"
+	RouteSettingCallback = RouteBase + "/setting-callback"
 
-	RouteSettingCallback = RouteBasePath + "/setting-callback"
+	RouteAuthorize = RouteBase + "/{provider}/authorize"
+	RouteCallback  = RouteBase + "/{provider}/callback"
 )
 
 func (h *Handler) RegisterPublicRoutes(r *internal.PublicRouter) {
-	r.GET(RouteMe, h.me)
+	r.GET(RouteBase, h.me)
 
-	r.GET(RouteAuthorizePath, h.authorize)
-	r.GET(RouteCallbackPath, h.callback)
+	r.GET(RouteAuthorize, h.authorize)
+	r.GET(RouteCallback, h.callback)
 }
 
 func (h *Handler) RegisterAdminRoutes(r *internal.AdminRouter) {

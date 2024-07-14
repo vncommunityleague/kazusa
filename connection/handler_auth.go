@@ -17,7 +17,7 @@ const ExpiredTime = 5 * time.Minute
 
 func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 	redirectUrl := r.FormValue("redirect")
-	provider, _, err := GetProvider(r.PathValue("provider"), h.d)
+	provider, err := GetAuthProvider(r.PathValue("provider"), h.d)
 	if err != nil {
 		internal.ErrorJson(w, http.StatusNotFound, "connection_provider_not_found", err)
 		return
@@ -62,7 +62,7 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
 	state := r.FormValue("state")
-	provider, providerName, err := GetProvider(r.PathValue("provider"), h.d)
+	provider, err := GetAuthProvider(r.PathValue("provider"), h.d)
 	if err != nil {
 		internal.ErrorJson(w, http.StatusNotFound, "connection_provider_not_found", err)
 	}
@@ -86,25 +86,27 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := exchangeCode(ctx, provider, code, flow.CodeVerifier)
-	if err != nil {
-		internal.ErrorJson(w, http.StatusInternalServerError, "unable_to_exchange_code", err)
-		return
-	}
-
-	conn, err := provider.Callback(ctx, t)
-	if err != nil {
-		internal.ErrorJson(w, http.StatusBadRequest, "unable_to_link", err)
-		return
-	}
-
 	id, err := uuid.Parse(sess.Identity.Id)
 	if err != nil {
 		internal.ErrorJson(w, http.StatusInternalServerError, "uuid_cannot_be_converted", err)
 		return
 	}
 
-	if err = h.d.ConnectionManager().LinkOrCreateConnections(ctx, id, providerName, conn); err != nil {
+	t, err := exchangeCode(ctx, provider, code, flow.CodeVerifier)
+	if err != nil {
+		internal.ErrorJson(w, http.StatusInternalServerError, "unable_to_exchange_code", err)
+		return
+	}
+
+	containers := &Connections{
+		ID: id,
+	}
+	if err := provider.Callback(ctx, t, containers); err != nil {
+		internal.ErrorJson(w, http.StatusBadRequest, "unable_to_link", err)
+		return
+	}
+
+	if err := h.d.SaveConnections(ctx, containers); err != nil {
 		internal.ErrorJson(w, http.StatusBadRequest, "unable_to_link", err)
 		return
 	}
@@ -112,7 +114,7 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, flow.Url, http.StatusTemporaryRedirect)
 }
 
-func exchangeCode(ctx context.Context, provider Provider, code string, codeVerifier string) (*oauth2.Token, error) {
+func exchangeCode(ctx context.Context, provider AuthProvider, code string, codeVerifier string) (*oauth2.Token, error) {
 	o, err := provider.OAuth()
 	if err != nil {
 		return nil, err
