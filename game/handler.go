@@ -12,7 +12,7 @@ type (
 		Repository
 	}
 	HandlerProvider interface {
-		ConnectionHandler() *Handler
+		GameHandler() *Handler
 	}
 	Handler struct {
 		d handlerDependenices
@@ -38,14 +38,19 @@ func (h *Handler) RegisterPublicRoutes(r *internal.PublicRouter) {
 
 func (h *Handler) gameUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	users := strings.Split(r.PathValue("users"), ",")
+
 	p, err := GetGameProvider(r.PathValue("game"), h.d)
 	if err != nil {
 		internal.ErrorJson(w, http.StatusNotFound, "game_provider_not_found", err)
 		return
 	}
 
-	data, err := p.GetMultiUserGameData(ctx, users)
+	users := strings.Split(r.PathValue("users"), ",")
+	mode := r.FormValue("mode")
+
+	data, err := p.GetMultiUserGameData(ctx, users, &ExtraQuery{
+		Mode: mode,
+	})
 	if err != nil {
 		internal.ErrorJson(w, http.StatusBadRequest, "unable_to_retrieve_data", err)
 		return

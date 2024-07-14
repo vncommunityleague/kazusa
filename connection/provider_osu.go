@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"net/http"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 
@@ -24,11 +26,13 @@ const (
 	OsuBaseURL = "https://osu.ppy.sh"
 	OsuAPIURL  = OsuBaseURL + "/api/v2"
 
-	OsuAuthURL  = OsuAPIURL + "/oauth/authorize"
-	OsuTokenUrl = OsuAPIURL + "/oauth/token"
+	OsuAuthURL  = OsuBaseURL + "/oauth/authorize"
+	OsuTokenUrl = OsuBaseURL + "/oauth/token"
 
-	OsuMeURL       = OsuAPIURL + "/me"
+	OsuMeURL = OsuAPIURL + "/me"
+
 	OsuGetUsersURL = OsuAPIURL + "/users"
+	OsuGetUserURL  = OsuGetUsersURL + "/{user}/{mode}"
 )
 
 func getClientIdAndSecret() (string, string) {
@@ -51,7 +55,7 @@ func (p *osuAuthProvider) OAuth() (*oauth2.Config, error) {
 			TokenURL: OsuTokenUrl,
 		},
 		RedirectURL: redirectUrl,
-		Scopes:      []string{"identify"},
+		Scopes:      []string{"public", "identify"},
 	}, nil
 }
 
@@ -68,8 +72,13 @@ func (p *osuAuthProvider) Callback(ctx context.Context, token *oauth2.Token, con
 		Country   string `json:"country_code,omitempty"`
 	}
 
+	req, err := http.NewRequest(http.MethodGet, OsuMeURL, nil)
+	if err != nil {
+		return err
+	}
+
 	httpClient := o.Client(ctx, token)
-	if err := internal.RequestOAuthData(httpClient, OsuMeURL, &user); err != nil {
+	if err := internal.RequestOAuthData(httpClient, req, &user); err != nil {
 		return err
 	}
 
@@ -97,6 +106,6 @@ func (p *osuSelfAuthProvider) ClientCredentials() (*clientcredentials.Config, er
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
 		TokenURL:     OsuTokenUrl,
-		Scopes:       []string{"identify"},
+		Scopes:       []string{"public"},
 	}, nil
 }

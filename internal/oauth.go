@@ -5,12 +5,7 @@ import (
 	"net/http"
 )
 
-func RequestOAuthData(oauthHttp *http.Client, url string, output any) error {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return err
-	}
-
+func RequestOAuthData(oauthHttp *http.Client, req *http.Request, output any) error {
 	req.Header.Add("User-Agent", "Vietnam Community League")
 	req.Header.Add("Content-Type", "application/json")
 

@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"github.com/vncommunityleague/kazusa/game"
 
 	"github.com/vncommunityleague/kazusa/connection"
 	"github.com/vncommunityleague/kazusa/internal"
@@ -16,6 +17,8 @@ type Default struct {
 
 	connectionHandler *connection.Handler
 	connectionManager *connection.Manager
+
+	gameHandler *game.Handler
 }
 
 func NewRegistryDefault() Registry {
@@ -26,6 +29,7 @@ func NewRegistryDefault() Registry {
 
 func (m *Default) RegisterPublicRoutes(ctx context.Context, router *internal.PublicRouter) {
 	m.ConnectionHandler().RegisterPublicRoutes(router)
+	m.GameHandler().RegisterPublicRoutes(router)
 }
 
 func (m *Default) Kratos() ory.Kratos {
@@ -50,4 +54,12 @@ func (m *Default) ConnectionManager() *connection.Manager {
 	}
 
 	return m.connectionManager
+}
+
+func (m *Default) GameHandler() *game.Handler {
+	if m.gameHandler == nil {
+		m.gameHandler = game.NewHandler(m)
+	}
+
+	return m.gameHandler
 }

@@ -87,10 +87,12 @@ func NewRepository() Repository {
 
 func newRepository(d Depdencies) Repository {
 	connectionFlowRepo := om.NewJSONRepository[connection.Flow]("connection_flow", connection.Flow{}, d.Rds)
+	osuGameDataRepo := om.NewJSONRepository[game.OsuDataRedis]("game_data_osu", game.OsuDataRedis{}, d.Rds)
 
 	return &Default{
 		d:                  d,
 		ConnectionFlowRepo: connectionFlowRepo,
+		OsuGameDataRepo:    osuGameDataRepo,
 	}
 }
 
