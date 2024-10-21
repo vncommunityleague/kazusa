@@ -1,0 +1,55 @@
+- id "vocolo-api-v1:create"
+  upstream:
+    preserve_host: true
+    url: "http://127.0.0.1:8080"
+  match
+
+- id "vocolo-api-v1:view"
+  upstream:
+    preserve_host: true
+    url: "http://127.0.0.1:8080"
+  match:
+    url: "http://127.0.0.1:8080/<osu>/<tournaments|mappools|matches>/<**>"
+    methods:
+      - GET
+    authenticators:
+      - handler: cookie_session
+      - handler: anonymous
+    mutators:
+      - handler: header
+    authorizer:
+      - handler: remote_json
+        config:
+          payload: |
+            {
+              "subject_id": "{{ print .Subject }}",
+              "relation": "view",
+              "namespace": "{{ printIndex .MatchContext.RegexpCaptureGroups 0 }}{{ printIndex .MatchContext.RegexpCaptureGroups 1 }}",
+              "object": "{{ printIndex .MatchContext.RegexpCaptureGroups 2 }}"
+            }
+- id "vocolo-api-v1:edit"
+  upstream:
+    preserve_host: true
+    url: "http://127.0.0.1:8080"
+  match:
+    url: "http://127.0.0.1:8080/<osu>/<tournaments|mappools|matches>/<**>"
+    methods:
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+    authenticators:
+      - handler: cookie_session
+      - handler: anonymous
+    mutators:
+      - handler: header
+    authorizer:
+      - handler: remote_json
+        config:
+          payload: |
+            {
+              "subject_id": "{{ print .Subject }}",
+              "relation": "editors",
+              "namespace": "{{ printIndex .MatchContext.RegexpCaptureGroups 0 }}{{ printIndex .MatchContext.RegexpCaptureGroups 1 }}",
+              "object": "{{ printIndex .MatchContext.RegexpCaptureGroups 2 }}"
+            }
