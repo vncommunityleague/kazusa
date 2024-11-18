@@ -6,19 +6,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type Connections struct {
-	ID uuid.UUID `json:"id" gorm:"primaryKey;type:uuid"`
-
-	Osu Connection `json:"osu" gorm:"type:bytes;serializer:gob"`
-
-	CreatedAt time.Time `json:"-"`
-	UpdatedAt time.Time `json:"-"`
-}
-
 type Connection struct {
-	Id        uint32 `json:"id"`
+	ID       uint64    `json:"id"`
+	UserId   uuid.UUID `json:"user_id" gorm:"type:uuid"`
+	Provider string    `json:"provider"`
+
+	ConnId    string `json:"conn_id"`
 	Username  string `json:"username"`
 	AvatarUrl string `json:"avatar_url"`
 
-	Country string `json:"country"`
+	CreatedAt time.Time `json:"-"`
+	UpdatedAt time.Time `json:"-"`
 }

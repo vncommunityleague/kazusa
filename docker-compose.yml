@@ -60,8 +60,9 @@ services:
       - COOKIE_SECRET=changeme
       - CSRF_COOKIE_NAME=ory_csrf_ui
       - CSRF_COOKIE_SECRET=changeme
+      - PORT=4435
     ports:
-      - "4455:3000"
+      - "4435:4435"
     restart: on-failure
 
   server:
@@ -81,6 +82,23 @@ services:
       - KRATOS_URL
       - OSU_CLIENT_ID
       - OSU_CLIENT_SECRET
+      - JWKS_URL
+    volumes:
+      - config-data:/etc/config
+
+  oathkeeper:
+    image: oryd/oathkeeper:v0.40
+    depends_on:
+      - kratos
+      - server
+    ports:
+      - "4455:4455"
+      - "4456:4456"
+    command:
+      serve proxy -c "/etc/config/oathkeeper/${OATHKEEPER_CONFIG_NAME}"
+    environment:
+      - LOG_LEVEL=debug
+    restart: unless-stopped
     volumes:
       - config-data:/etc/config
 

@@ -9,11 +9,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/vncommunityleague/kazusa/connection"
-	"github.com/vncommunityleague/kazusa/game"
 )
 
 type (
-	Depdencies struct {
+	Dependencies struct {
 		Rds rueidis.Client
 		DB  *gorm.DB
 	}
@@ -21,18 +20,14 @@ type (
 	Repository interface {
 		connection.Repository
 
-		game.Repository
-
 		Raw(query string, args ...interface{})
 		Exec(query string, args ...interface{})
 	}
 
 	Default struct {
-		d Depdencies
+		d Dependencies
 
 		ConnectionFlowRepo om.Repository[connection.Flow]
-
-		OsuGameDataRepo om.Repository[game.OsuDataRedis]
 	}
 )
 
@@ -49,7 +44,7 @@ func connectToDB() (*gorm.DB, error) {
 
 	db.Debug().Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 
-	err = db.AutoMigrate(&connection.Connections{})
+	err = db.AutoMigrate(&connection.Connection{})
 	if err != nil {
 		panic(err)
 	}
@@ -79,20 +74,18 @@ func NewRepository() Repository {
 		panic(err)
 	}
 
-	return newRepository(Depdencies{
+	return newRepository(Dependencies{
 		Rds: rds,
 		DB:  db,
 	})
 }
 
-func newRepository(d Depdencies) Repository {
+func newRepository(d Dependencies) Repository {
 	connectionFlowRepo := om.NewJSONRepository[connection.Flow]("connection_flow", connection.Flow{}, d.Rds)
-	osuGameDataRepo := om.NewJSONRepository[game.OsuDataRedis]("game_data_osu", game.OsuDataRedis{}, d.Rds)
 
 	return &Default{
 		d:                  d,
 		ConnectionFlowRepo: connectionFlowRepo,
-		OsuGameDataRepo:    osuGameDataRepo,
 	}
 }
 

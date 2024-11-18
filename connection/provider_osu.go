@@ -2,9 +2,9 @@ package connection
 
 import (
 	"context"
-	"os"
-
 	"net/http"
+	"os"
+	"strconv"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -13,10 +13,10 @@ import (
 )
 
 type osuAuthProvider struct {
-	d providerDepdencies
+	d providerDependencies
 }
 
-func NewOsuAuthProvider(d providerDepdencies) AuthProvider {
+func NewOsuAuthProvider(d providerDependencies) AuthProvider {
 	return &osuAuthProvider{
 		d,
 	}
@@ -30,9 +30,6 @@ const (
 	OsuTokenUrl = OsuBaseURL + "/oauth/token"
 
 	OsuMeURL = OsuAPIURL + "/me"
-
-	OsuGetUsersURL = OsuAPIURL + "/users"
-	OsuGetUserURL  = OsuGetUsersURL + "/{user}/{mode}"
 )
 
 func getClientIdAndSecret() (string, string) {
@@ -47,6 +44,8 @@ func (p *osuAuthProvider) OAuth() (*oauth2.Config, error) {
 
 	redirectUrl := RouteBaseCallbackPath("osu")
 
+	println(redirectUrl)
+
 	return &oauth2.Config{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
@@ -59,38 +58,33 @@ func (p *osuAuthProvider) OAuth() (*oauth2.Config, error) {
 	}, nil
 }
 
-func (p *osuAuthProvider) Callback(ctx context.Context, token *oauth2.Token, containers *Connections) error {
+func (p *osuAuthProvider) Callback(ctx context.Context, token *oauth2.Token) (*Connection, error) {
 	o, err := p.OAuth()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var user struct {
 		ID        uint32 `json:"id,omitempty"`
 		Username  string `json:"username,omitempty"`
 		AvatarURL string `json:"avatar_url,omitempty"`
-		Country   string `json:"country_code,omitempty"`
 	}
 
 	req, err := http.NewRequest(http.MethodGet, OsuMeURL, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	httpClient := o.Client(ctx, token)
 	if err := internal.RequestOAuthData(httpClient, req, &user); err != nil {
-		return err
+		return nil, err
 	}
 
-	containers.Osu = Connection{
-		Id:        user.ID,
+	return &Connection{
+		ConnId:    strconv.FormatInt(int64(user.ID), 10),
 		Username:  user.Username,
 		AvatarUrl: user.AvatarURL,
-
-		Country: user.Country,
-	}
-
-	return nil
+	}, nil
 }
 
 type osuSelfAuthProvider struct{}

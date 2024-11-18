@@ -47,8 +47,8 @@ selfservice:
         providers:
           - id: discord
             provider: discord
-            client_id: ''
-            client_secret: ''
+            client_id: ""
+            client_secret: ""
             mapper_url: file:///etc/config/kratos/oidc.discord.jsonnet
             scope:
               - email
@@ -153,7 +153,7 @@ identity:
 
 courier:
   smtp:
-    connection_uri: 'smtp://vcl:vcl@mail.vcl.id.vn'
+    connection_uri: "smtp://vcl:vcl@mail.vcl.id.vn"
     from_address: no-reply@mail.vcl.id.vn
     from_name: Vietnam Community League
 #  template_override_path: /etc/config/kratos/mail-templates

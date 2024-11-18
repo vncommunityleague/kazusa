@@ -3,25 +3,22 @@ package connection
 import (
 	"context"
 	"errors"
-	"os"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 
-	"github.com/vncommunityleague/kazusa/ory"
+	"github.com/vncommunityleague/kazusa/internal"
 )
 
 type (
-	providerDepdencies interface {
+	providerDependencies interface {
 		Repository
-
-		ory.Provider
 	}
 
 	AuthProvider interface {
 		OAuth() (*oauth2.Config, error)
 
-		Callback(ctx context.Context, token *oauth2.Token, containers *Connections) error
+		Callback(ctx context.Context, token *oauth2.Token) (*Connection, error)
 	}
 
 	SelfAuthProvider interface {
@@ -31,12 +28,12 @@ type (
 
 var (
 	// List of supported OAuth providers
-	authProviders = map[string]func(d providerDepdencies) AuthProvider{
+	authProviders = map[string]func(d providerDependencies) AuthProvider{
 		"osu": NewOsuAuthProvider,
 	}
 )
 
-func GetAuthProvider(id string, d providerDepdencies) (AuthProvider, error) {
+func GetAuthProvider(id string, d providerDependencies) (AuthProvider, error) {
 	if p, ok := authProviders[id]; ok {
 		return p(d), nil
 	}
@@ -45,5 +42,5 @@ func GetAuthProvider(id string, d providerDepdencies) (AuthProvider, error) {
 }
 
 func RouteBaseCallbackPath(provider string) string {
-	return os.Getenv("SITE_URL") + "/connections/" + provider + "/callback"
+	return internal.GetSiteUrl() + "connections/" + provider + "/callback"
 }
